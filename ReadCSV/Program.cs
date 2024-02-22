@@ -1,82 +1,23 @@
-﻿using CsvHelper;
-using System.Globalization;
-using System.Data.SqlClient;
-using CsvHelper.Configuration; // Add this line
+﻿//Exercise 3: The Program.cs file is there to facilitate the interaction between the two classes: it first instantiates both objects: the CSV reader and the DB writer. In then invokes the method on the CSV reader object to get the list from the CSV file. Then it passes this list to the DB writer.
 
-public class Synopresult
-{
-    public string ProgramName { get; set; }
-    public string Feature { get; set; }
-    public string MonitoredSignals { get; set; }
-    public long SerialNr { get; set; }
-    public long StartTime { get; set; }
-    public int Duration { get; set; }
-    public bool Completed { get; set; }
-    public decimal Stability { get; set; }
-    public string Comment { get; set; }
-    //public string Comment2 { get; set; }
-}
+// Database connection string
+string connectionString = "Data Source=.\\SQL2016;Initial Catalog=GTMS_Test;User Id=sa;Password=freebsd;Integrated Security=True";
 
-class Program
-{
-    static void Main(string[] args)
-    {
-        string connectionString = "Data Source=.\\SQL2016;Initial Catalog=GTMS_Test;User Id=sa;Password=freebsd;Integrated Security=True";
+// Path to the CSV file
+string csvFilePath = "D:\\Synop\\process_monitor\\synop_result\\synop_result.csv";
 
-        // Path to your CSV file
-        string csvFilePath = "D:\\Synop\\process_monitor\\synop_result\\synop_result.csv";
+// Create an instance of CsvParser and initialize it with the CSV file path
+CsvParser csvParser = new CsvParser(csvFilePath);
 
-        try
-        {
-            var config = new CsvConfiguration(CultureInfo.InvariantCulture)
-            {
-                Delimiter = ",",
-                PrepareHeaderForMatch = args => args.Header.ToUpper(),
+// Parse the CSV file and get a list of Synopresult objects
+// Parse the CSV file and get a list of Synopresult objects
+List<Synopresult> records = csvParser.ParseCsv();
 
-            };
-            using (var reader = new StreamReader(csvFilePath))
-            using (var csv = new CsvReader(reader, config))
-            {
-                var records = csv.GetRecords<Synopresult>().ToList();
+// Create an instance of DatabaseManager and initialize it with the database connection string
+DatabaseManager dbManager = new DatabaseManager(connectionString);
 
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
+// Insert the parsed records into the database
+dbManager.InsertRecords(records);
 
-                    int id = 15;
-
-                    foreach (var person in records)
-                    {
-                        string query = @"INSERT INTO [GTMS_Test].[dbo].[tblAicomEreignisse] 
-                                        ([ID], [ProgramName], [Feature], [MonitoredSignals], [SerialNr], 
-                                         [StartTime], [Duration], [Completed], 
-                                         [Stability], [Comment])
-                                        VALUES 
-                                        (@ID, @ProgramName, @Feature, @MonitoredSignals, @SerialNr, 
-                                         @StartTime, @Duration, @Completed, 
-                                         @Stability, @Comment)";
-                        SqlCommand command = new SqlCommand(query, connection);
-                        command.Parameters.AddWithValue("@ID", id);
-                        command.Parameters.AddWithValue("@ProgramName", person.ProgramName);
-                        command.Parameters.AddWithValue("@Feature", person.Feature);
-                        command.Parameters.AddWithValue("@MonitoredSignals", person.MonitoredSignals);
-                        command.Parameters.AddWithValue("@SerialNr", person.SerialNr);
-                        command.Parameters.AddWithValue("@StartTime", person.StartTime);
-                        command.Parameters.AddWithValue("@Duration", person.Duration);
-                        command.Parameters.AddWithValue("@Completed", person.Completed);
-                        command.Parameters.AddWithValue("@Stability", person.Stability);
-                        command.Parameters.AddWithValue("@Comment", person.Comment);
-                        command.ExecuteNonQuery();
-                        id++;
-                    }
-                }
-            }
-
-            Console.WriteLine("Data inserted successfully.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("An error occurred: " + ex.Message);
-        }
-    }
-}
+// Print a message to the console
+Console.WriteLine("Data inserted successfully.");
