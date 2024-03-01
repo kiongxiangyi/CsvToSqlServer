@@ -10,4 +10,4 @@
     public decimal Stability { get; set; }
     public string Comment { get; set; }
     //public string Comment2 { get; set; }
-    }
+}
